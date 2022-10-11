@@ -2,6 +2,7 @@
 """
 Exercise 1
 """
+from decimal import Decimal
 import numpy as np
 from numpy.polynomial import polynomial as ply
 
@@ -61,7 +62,8 @@ def generate_values() -> np.ndarray:
     :returns: a list of values
 
     """
-    return np.arange(-2, 2, 0.5)
+    increment = 0.1
+    return np.arange(-2, 2 + increment, increment)
 
 
 def generate_table(N: int):
@@ -81,7 +83,7 @@ def generate_table(N: int):
     padding = "\t"
     for idx, val in enumerate(x_values):
         print(
-            val,
+            f"{Decimal(val).quantize(Decimal('1.00'))}",
             padding,
             f"{orig[idx]:.16f}",
             padding,
@@ -143,7 +145,7 @@ def run_option_b():
 def run_option_c():
     """Run option c"""
     print("You have chosen part (c)")
-    N = 742718
+    N = 742718 # I just kept adjusting until I get the desired difference
     calc_pi = 4 * find_arctan(1, N)
     diff = abs(np.pi - calc_pi)
     print(
@@ -238,11 +240,24 @@ def find_many_roots(
     x_val = x_min
     roots = []
     delta = 0.000009
-    while x_val <= x_max:
+    while True:
+        if x_val > x_max:
+            break
         answer = iterate_newton_raphson(variables, x_val, delta)
         if answer[0] is not None:
-            roots.append([f"{x_val:.6f}", str(answer[0]).ljust(16), str(answer[1])])
+            roots.append(
+                [
+                    f"{x_val:.6f}",
+                    str(Decimal(answer[0]).quantize(Decimal("1.000000000000"))).ljust(
+                        16
+                    ),
+                    str(answer[1]),
+                ]
+            )
+        elif answer[0] is None:
+            roots.append([f"{x_val:.6f}", answer[0], answer[1]])
         x_val += increment
+        x_val = float(Decimal(x_val).quantize(Decimal("1.000")))
     return roots
 
 
@@ -298,9 +313,9 @@ def main():
             run_option_h()
 
         elif user_input != "q":
-            print("This is not a valid choice")
+            print("This is not a valid choice.")
 
-    print("You have chosen to finish - goodbye.")
+    print(" You have chosen to finish - goodbye.")
 
 
 if __name__ == "__main__":
