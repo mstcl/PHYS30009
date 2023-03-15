@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # vim:set fdm=indent:
 """
-Exercise 1
+Exercise 2
 """
 from decimal import Decimal
 import sys
@@ -58,7 +58,7 @@ class StringWave:
     def get_phase_velocity(self) -> float:
         """Calculate phase velocity of Gaussian
 
-        :returns: v as float
+        :returns: phase velocity as float
 
         """
         return np.sqrt(self.tension / self.length_density)
@@ -77,73 +77,36 @@ class StringWave:
 #################################
 
 
-def run_option_a(
-    jumper: Jumper, global_vars: dict, is_plot: bool, is_verbose: bool
-) -> tuple:
+def run_option_a(jumper: Jumper, global_vars: dict):
     """Execute part a
 
-    :param jumper: from Jumper class
-    :param global_vars: global variables
-    :param is_plot: toggles plotting
-    :param is_verbose: toggles verbosity
-    :returns: tuple of arrays
+    :param jumper: TODO
+    :param global_vars: TODO
 
     """
-    t_vals, y_vals, vy_vals = calculate_analytical_predictions(
-        jumper, global_vars, is_verbose
-    )
-    t_vals, y_vals, vy_vals = cut_negative_distance(
-        t_vals, y_vals, vy_vals, determine_negative_distance(y_vals, global_vars)
-    )
-    if is_verbose:
-        print(f"Duration of fall is {round_with_decimal(3,t_vals[-1])} s.")
-    if is_plot:
-        _ = input("Press anything to show plot...")
-        plot_part_a_b_c(t_vals, y_vals, vy_vals)
-    return t_vals, y_vals, vy_vals
+    fill_dataset_jumper_ana(jumper, global_vars, True, True)
 
 
-def run_option_b_c(
-    jumper: Jumper,
-    global_vars: dict,
-    is_constant_drag: bool,
-    is_plot: bool,
-    is_verbose: bool,
-) -> tuple:
-    """Execute part b or c
+def run_option_b(jumper, global_vars):
+    """Execute part b
 
-    :param jumper: from Jumper class
-    :param global_vars: global variables
-    :param is_constant_drag: toggles drag varying
-    :param is_plot: toggles plotting
-    :param is_verbose: toggles verbosity
-    :returns: tuple of arrays t, y, v
-
-    """
-    t_vals, y_vals, vy_vals = calculate_numerical_predictions(
-        jumper, global_vars, is_constant_drag, is_verbose
-    )
-    t_vals, y_vals, vy_vals = cut_negative_distance(
-        t_vals, y_vals, vy_vals, determine_negative_distance(y_vals, global_vars)
-    )
-    if is_verbose:
-        print(f"Duration of fall is {round_with_decimal(3,t_vals[-1])} s.")
-    if is_plot:
-        _ = input("Press anything to show plot...")
-        plot_part_a_b_c(t_vals, y_vals, vy_vals)
-        return _, _, _
-    return t_vals, y_vals, vy_vals
-
-
-def run_option_b_extra(jumper: Jumper, global_vars: dict):
-    """Run additional things for b for report
-
-    :param jumper: from Jumper class
+    :param jumper: from class Jumper
     :param global_vars: global variables
 
     """
+    fill_dataset_jumper_num(jumper, global_vars, True, True, True)
     vary_timestep(jumper, global_vars)
     vary_mass(jumper, global_vars)
+
+
+def run_option_c(jumper, global_vars):
+    """Execute part c
+
+    :param jumper: from class Jumper
+    :param global_vars: global variables
+
+    """
+    fill_dataset_jumper_num(jumper, global_vars, False, True, True)
 
 
 def run_option_d(jumper: Jumper, global_vars: dict):
@@ -153,7 +116,9 @@ def run_option_d(jumper: Jumper, global_vars: dict):
     :param global_vars: global variables
 
     """
-    t_vals, y_vals, vy_vals = run_option_b_c(jumper, global_vars, False, False, True)
+    t_vals, y_vals, vy_vals = fill_dataset_jumper_num(
+        jumper, global_vars, False, False, True
+    )
     mach_ratio, vy_vals_abs = calculate_mach_ratios(y_vals, vy_vals, global_vars)
     print("The maximum Mach number is", round_with_decimal(3, np.max(mach_ratio)))
     print("The maximum speed is", round_with_decimal(3, np.max(vy_vals_abs)))
@@ -175,7 +140,8 @@ def run_option_e(global_vars: dict, wavepacket: StringWave):
     :param wavepacket: from StringWave class
 
     """
-    dataset, x_vals, t_vals = fill_dataset(global_vars, wavepacket)
+    print_header_2(wavepacket, global_vars)
+    dataset, x_vals, t_vals = fill_dataset_wave(global_vars, wavepacket)
     plot_waves(dataset, t_vals, x_vals, wavepacket)
 
 
@@ -189,13 +155,13 @@ def run_option_f(global_vars: dict, wavepacket: StringWave):
     :wavepacket: from StringWave class
 
     """
-    dataset_actual, _, _ = fill_dataset(global_vars, wavepacket)
+    dataset_actual, _, _ = fill_dataset_wave(global_vars, wavepacket)
     gammas = np.concatenate(
         (
-            np.linspace(0.1, 1.0, 40),
-            np.linspace(1.1, 1.12, 40),
-            np.linspace(1.3, 1.32, 40),
-            np.linspace(1.5, 1.52, 40),
+            np.linspace(0.1, 0.5, 50),
+            np.linspace(0.51, 0.99, 50),
+            np.linspace(1.1, 1.12, 50),
+            np.linspace(1.3, 1.32, 50),
         ),
         axis=None,
     )
@@ -207,7 +173,10 @@ def run_option_f(global_vars: dict, wavepacket: StringWave):
     std_solution = np.zeros_like(gammas)
     for idx, _ in enumerate(gammas):
         wavepacket.phase_velocity = phase_velocities[idx]
-        dataset_approx, _, _ = fill_dataset(global_vars, wavepacket)
+        dataset_approx, x_vals, t_vals = fill_dataset_wave(global_vars, wavepacket)
+        # if idx == 99:
+        #     print(gammas[idx])
+        #     plot_waves(dataset_approx, t_vals, x_vals, wavepacket)
         difference = dataset_approx - dataset_actual
         std_solution[idx] = np.average(np.std(difference, axis=1))
     plot_gammas_std(gammas, std_solution)
@@ -218,8 +187,68 @@ def run_option_f(global_vars: dict, wavepacket: StringWave):
 ##############################
 
 
+def fill_dataset_jumper_ana(
+    jumper: Jumper, global_vars: dict, is_plot: bool, is_verbose: bool
+) -> tuple:
+    """Retrieve results t, v, and y arrays and trim them to
+    stop after hitting the ground (analytical)
+
+    :param jumper: from Jumper class
+    :param global_vars: global variables
+    :param is_plot: toggles plotting
+    :param is_verbose: toggles verbosity
+    :returns: tuple of arrays (t, y, v)
+
+    """
+    t_vals, y_vals, vy_vals = calculate_analytical_predictions(
+        jumper, global_vars, is_verbose
+    )
+    t_vals, y_vals, vy_vals = cut_negative_distance(
+        t_vals, y_vals, vy_vals, determine_negative_distance(y_vals, global_vars)
+    )
+    if is_verbose:
+        print(f"Duration of fall is {round_with_decimal(3,t_vals[-1])} s.")
+    if is_plot:
+        _ = input("Press anything to show plot...")
+        plot_part_a_b_c(t_vals, y_vals, vy_vals)
+    return t_vals, y_vals, vy_vals
+
+
+def fill_dataset_jumper_num(
+    jumper: Jumper,
+    global_vars: dict,
+    is_constant_drag: bool,
+    is_plot: bool,
+    is_verbose: bool,
+) -> tuple:
+    """Retrieve results t, v, and y arrays and trim them to
+    stop after hitting the ground (numerical)
+
+    :param jumper: from Jumper class
+    :param global_vars: global variables
+    :param is_constant_drag: toggles drag varying
+    :param is_plot: toggles plotting
+    :param is_verbose: toggles verbosity
+    :returns: tuple of arrays (t, y, v)
+
+    """
+    t_vals, y_vals, vy_vals = calculate_numerical_predictions(
+        jumper, global_vars, is_constant_drag, is_verbose
+    )
+    t_vals, y_vals, vy_vals = cut_negative_distance(
+        t_vals, y_vals, vy_vals, determine_negative_distance(y_vals, global_vars)
+    )
+    if is_verbose:
+        print(f"Duration of fall is {round_with_decimal(3,t_vals[-1])} s.")
+    if is_plot:
+        _ = input("Press anything to show plot...")
+        plot_part_a_b_c(t_vals, y_vals, vy_vals)
+        return _, _, _
+    return t_vals, y_vals, vy_vals
+
+
 def vary_timestep(jumper: Jumper, global_vars: dict):
-    """Vary timestep of Euler method
+    """Loop through various timesteps and calculate the error of each simulation.
 
     :param jumper: from Jumper class
     :param global_vars: global variables
@@ -234,7 +263,8 @@ def vary_timestep(jumper: Jumper, global_vars: dict):
         (
             np.linspace(0.1, 1.0, 100),
             np.linspace(1.01, 3.0, 50),
-            np.linspace(3.01, 5.0, 30),
+            np.linspace(3.01, 5.0, 50),
+            np.linspace(5.01, 7.0, 50),
         ),
         axis=None,
     )
@@ -242,10 +272,10 @@ def vary_timestep(jumper: Jumper, global_vars: dict):
     std_data_vy = np.ones_like(timestep)
     for idx, val in enumerate(timestep):
         global_vars["timestep"] = val
-        t_vals_num, y_vals_num, vy_vals_num = run_option_b_c(
+        t_vals_num, y_vals_num, vy_vals_num = fill_dataset_jumper_num(
             jumper, global_vars, True, False, False
         )
-        t_vals_ana, y_vals_ana, vy_vals_ana = run_option_a(
+        t_vals_ana, y_vals_ana, vy_vals_ana = fill_dataset_jumper_ana(
             jumper, global_vars, False, False
         )
         stop_idx = np.min([np.size(t_vals_num), np.size(t_vals_ana)])
@@ -256,7 +286,7 @@ def vary_timestep(jumper: Jumper, global_vars: dict):
 
 
 def vary_mass(jumper: Jumper, global_vars: dict):
-    """Vary mass to vary k/m
+    """Loop through various masses and calculate the duration and maximum speed of each simulation.
 
     :param jumper: from Jumper class
     :param global_vars: global variables
@@ -272,7 +302,9 @@ def vary_mass(jumper: Jumper, global_vars: dict):
     duration, max_speed = np.zeros_like(masses), np.zeros_like(masses)
     for idx, val in enumerate(masses):
         jumper.mass = val
-        t_vals, _, vy_vals = run_option_b_c(jumper, global_vars, True, False, False)
+        t_vals, _, vy_vals = fill_dataset_jumper_num(
+            jumper, global_vars, True, False, False
+        )
         duration[idx] = t_vals[-1]
         max_speed[idx] = np.max(np.absolute(vy_vals))
     _ = input("Press anything to show plot...")
@@ -288,7 +320,7 @@ def cut_negative_distance(
     :param y_vals: y array
     :param vy_vals: v array
     :param zero_idx: given index
-    :returns: tuple of values at given index
+    :returns: tuple of values at given index(t, y, v)
 
     """
     return t_vals[:zero_idx], y_vals[:zero_idx], vy_vals[:zero_idx]
@@ -302,16 +334,16 @@ def determine_negative_distance(y_vals: np.ndarray, global_vars: dict) -> int:
     :returns: first index where value is 0
 
     """
-    return np.where(y_vals < global_vars["tolerance"])[0][0]
+    return np.where(y_vals < sys.float_info.epsilon)[0][0]
 
 
 def calculate_mach_ratios(
     y_vals: np.ndarray, vy_vals: np.ndarray, global_vars: dict
 ) -> tuple:
-    """Generate main arrays for part d
+    """Populate mach ratio arrays
 
     :param vy_vals_abs: absolute v values
-    :returns: tuple of mach ratio and absolute v
+    :returns: tuple of of arrays (mach, vy_abs)
 
     """
     vsound_vals = calculate_sound_values(y_vals, global_vars)
@@ -333,7 +365,7 @@ def vary_jump_height(jumper: Jumper, global_vars: dict):
     duration = np.full_like(y_0, 0)
     for idx, val in enumerate(y_0):
         jumper.starting_height = val
-        t_vals, y_vals, vy_vals = run_option_b_c(
+        t_vals, y_vals, vy_vals = fill_dataset_jumper_num(
             jumper, global_vars, False, False, False
         )
         mach_ratio, vy_vals_abs = calculate_mach_ratios(y_vals, vy_vals, global_vars)
@@ -356,7 +388,7 @@ def vary_drag_coeff(jumper: Jumper, global_vars: dict):
     duration = np.full_like(drag_coeff, 0)
     for idx, val in enumerate(drag_coeff):
         jumper.drag_coeff = val
-        t_vals, y_vals, vy_vals = run_option_b_c(
+        t_vals, y_vals, vy_vals = fill_dataset_jumper_num(
             jumper, global_vars, False, False, False
         )
         mach_ratio, vy_vals_abs = calculate_mach_ratios(y_vals, vy_vals, global_vars)
@@ -367,11 +399,13 @@ def vary_drag_coeff(jumper: Jumper, global_vars: dict):
 
 
 def calculate_sound_values(y_vals: np.ndarray, global_vars: dict) -> np.ndarray:
-    """Generate sound array using temperature array
+    """Populate vsound array at each height in the altitude array, with an
+    intermediate temperature array which is populated using
+    numpy.select() to apply the inequalities provided.
 
     :param vy_vals: vy array
     :param y_vals: y varray
-    :returns: array for vsound values
+    :returns: vsound array
 
     """
     temp_conditions = [
@@ -390,7 +424,7 @@ def calculate_sound_values(y_vals: np.ndarray, global_vars: dict) -> np.ndarray:
 
 
 def calculate_drag_factor(y_val: float, jumper: Jumper, global_vars: dict) -> float:
-    """Find the drag factor which varies by altitude
+    """Evaluates the drag factor by altitude.
 
     :param y_val: height
     :param jumper: from Jumper class
@@ -405,12 +439,12 @@ def calculate_drag_factor(y_val: float, jumper: Jumper, global_vars: dict) -> fl
 def calculate_analytical_predictions(
     jumper: Jumper, global_vars: dict, is_verbose: bool
 ) -> tuple:
-    """Evaluate the values of y & v_y for given t
+    """Populate t, v, and y arrays given analytical equations.
 
     :param t_vals: time array
     :param y_vals: y array
     :param vy_vals: vy array
-    :returns: the results after evaluation
+    :returns: tuple of results after evaluation (t, y, v)
 
     """
     t_vals = np.arange(
@@ -422,7 +456,7 @@ def calculate_analytical_predictions(
     )
     drag_factor = jumper.drag_coeff * global_vars["rho_0"] * jumper.cross_sec_area / 2
     if is_verbose:
-        print_header(jumper, drag_factor, 0, True, "analytical")
+        print_header_1(jumper, drag_factor, 0, True, "analytical")
     y_vals = jumper.starting_height - (
         jumper.mass
         * np.log(
@@ -439,12 +473,12 @@ def calculate_analytical_predictions(
 def calculate_numerical_predictions(
     jumper: Jumper, global_vars: dict, is_constant_drag: bool, is_verbose: bool
 ) -> tuple:
-    """Evaluate the values of y & v_y for given t
+    """Populate t, v, and y arrays given numerical equations.
 
     :param t_vals: time array
     :param y_vals: y array
     :param vy_vals: vy array
-    :returns: the results after evaluation
+    :returns: tuple of results after evaluation (t, y, v)
 
     """
     t_vals = np.arange(0, global_vars["points"]) * global_vars["timestep"]
@@ -454,7 +488,7 @@ def calculate_numerical_predictions(
     )
     drag_factor = jumper.drag_coeff * global_vars["rho_0"] * jumper.cross_sec_area / 2
     if is_verbose:
-        print_header(
+        print_header_1(
             jumper, drag_factor, global_vars["timestep"], is_constant_drag, "numerical"
         )
     y_vals[0] = jumper.starting_height
@@ -478,12 +512,13 @@ def calculate_numerical_predictions(
 ##############################
 
 
-def fill_dataset(global_vars: dict, wavepacket: StringWave) -> tuple:
-    """Fill the 2d array with solutions
+def fill_dataset_wave(global_vars: dict, wavepacket: StringWave) -> tuple:
+    """Initialises solution array dataset, retrieve solutions for initial
+    timesteps, retrieve solutions for the other timesteps.
 
     :param global_vars: global variables
     :param wavepacket: from StringWave class
-    :returns: tuple of arrays
+    :returns: tuple of arrays (dataset, x, t)
 
     """
     gamma = (
@@ -521,7 +556,7 @@ def calculate_initial_timestep(
     t_vals: np.ndarray,
     dataset: np.ndarray,
 ) -> np.ndarray:
-    """Generate initial timesteps t_0 and t_1
+    """Populate dataset with solutions to the first two timesteps.
 
     :param position: the position x
     :param time: the time t
@@ -566,13 +601,13 @@ def calculate_next_timestep(
     dataset: np.ndarray,
     positions: np.ndarray,
 ) -> np.ndarray:
-    """Generate solution for given position and time
+    """Populates dataset with solutions for a given timestep.
 
     :param information: tuple of (position, time, gamma)
     :param global_vars: global variables
     :param wavepacket: from StringWave class
     :param dataset: the main 2d array
-    :returns: the solution at that point in space/time
+    :returns: the solutions at a given time
 
     """
     time_idx, gamma = information
@@ -641,7 +676,7 @@ def evaluate_initial_time_derivative(
 ######################
 
 
-def print_header(
+def print_header_1(
     jumper: Jumper,
     drag_factor: float,
     timestep: float,
@@ -698,15 +733,35 @@ def map_float_to_index(value: float, step: float, start: float) -> int:
     return int(round_with_decimal(0, (value - start) / step))
 
 
-#######################
-#  PLOTTING FUNCTION  #
-#######################
+def print_header_2(wavepacket: StringWave, global_vars: dict):
+    """Print some verbose information for problem 2
+
+    :wavepacket: from class StringWave
+    :global_vars: global variables
+
+    """
+    print(
+        "Simulating Gaussian wavepacket on a string:",
+        f"\n\tLength {wavepacket.length} m",
+        f"\n\tTension {wavepacket.tension} N",
+        f"\n\tDensity {wavepacket.length_density} kgm^-1",
+        "\nwith:",
+        f"\n\tLattice spacing {global_vars['lattice spacing']} m",
+        f"\n\tTimestep {global_vars['timestep2']} s",
+        f"\n\tTotal simulation time {global_vars['T']} S",
+    )
+
+
+########################
+#  PLOTTING FUNCTIONS  #
+########################
 
 
 def plot_waves(
     dataset: np.ndarray, t_vals: np.ndarray, x_vals: np.ndarray, wavepacket: StringWave
 ):
-    """Plot multiple scatter plots of the wave for each timestep and save to OS
+    """Plot multiple scatter plots of the wave for each timestep and save to
+    disk
 
     :param dataset: 2d array of wave solutions
     :param t_vals: t array
@@ -721,6 +776,7 @@ def plot_waves(
         plt.xlim([0, wavepacket.length])
         plt.xlabel("x displacement (m)")
         plt.ylabel("y displacement (m)")
+        plt.xticks(np.arange(0, wavepacket.length, 1.0))
         plt.scatter(x_vals, curr_wave)
         plt.savefig(f"Figure {idx}.png", format="png", dpi=150, bbox_inches="tight")
     print("Plots of the wave on a string saved for each timestep as Figure X.png.")
@@ -747,7 +803,7 @@ def plot_mach(
     mach_ratio: np.ndarray,
     t_vals: np.ndarray,
 ):
-    """Plot mach ratio
+    """Populate arrays for Mach numbers.
 
     :param mach_ratio: array of mach ratio by time
     :param t_vals: t array
@@ -834,7 +890,7 @@ def plot_drag_coeff(
 def plot_part_b_timestep(
     timestep: np.ndarray, std_data_y: np.ndarray, std_data_vy: np.ndarray
 ):
-    """Plot timestep vs std of difference
+    """Plot timestep vs std of difference in speed and height
 
     :param timestep: timestep array
     :param std_data_y: std in y array
@@ -884,32 +940,43 @@ def plot_gammas_std(gammas: np.ndarray, std_solution: np.ndarray):
     :param std_solution: std values
 
     """
+    interval = 50
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(12, 4))
     fig.suptitle("Effect of gamma on the standard deviation of the solution")
     ax1.set(
         xlabel=r"$\gamma$",
         ylabel="Standard deviation in height (m)",
-        title=r"$0.1 \leq \gamma \leq 1.0$",
+        title=r"$0.1 \leq \gamma \leq 0.5$",
     )
     ax2.set(
         xlabel=r"$\gamma$",
         ylabel="Standard deviation in height (m)",
-        title=r"$1.1 \leq \gamma \leq 1.12$",
+        title=r"$0.5 \leq \gamma \leq 0.99$",
     )
     ax3.set(
         xlabel=r"$\gamma$",
         ylabel="Standard deviation in height (m)",
-        title=r"$1.3 \leq \gamma \leq 1.32$",
+        title=r"$1.1 \leq \gamma \leq 1.12$",
     )
     ax4.set(
         xlabel=r"$\gamma$",
         ylabel="Standard deviation in height (m)",
-        title=r"$1.5 \leq \gamma \leq 1.52$",
+        title=r"$1.3 \leq \gamma \leq 1.32$",
     )
-    ax1.scatter(gammas[:40], std_solution[:40], s=2, c="r")
-    ax2.scatter(gammas[40:80], std_solution[40:80], s=2, c="r")
-    ax3.scatter(gammas[80:120], std_solution[80:120], s=2, c="r")
-    ax4.scatter(gammas[120:], std_solution[120:], s=2, c="r")
+    ax1.scatter(gammas[:interval], std_solution[:interval], s=2, c="r")
+    ax2.scatter(
+        gammas[interval : interval * 2],
+        std_solution[interval : interval * 2],
+        s=2,
+        c="r",
+    )
+    ax3.scatter(
+        gammas[interval * 2 : interval * 3],
+        std_solution[interval * 2 : interval * 3],
+        s=2,
+        c="r",
+    )
+    ax4.scatter(gammas[interval * 3 :], std_solution[interval * 3 :], s=2, c="r")
     plt.show()
 
 
@@ -943,20 +1010,17 @@ def main():
         print("You entered the choice: ", user_input)
         print(f"You have chosen part ({user_input})")
         if user_input == "a":
-            run_option_a(default_jumper, global_vars, True, True)
+            run_option_a(default_jumper, global_vars)
         elif user_input == "b":
-            run_option_b_c(default_jumper, global_vars, True, True, True)
-            run_option_b_extra(default_jumper, global_vars)
+            run_option_b(default_jumper, global_vars)
         elif user_input == "c":
-            run_option_b_c(baumgartner, global_vars, False, True, True)
+            run_option_c(baumgartner, global_vars)
         elif user_input == "d":
             run_option_d(baumgartner, global_vars)
         elif user_input == "e":
             run_option_e(global_vars, default_wave)
         elif user_input == "f":
             run_option_f(global_vars, default_wave)
-        # elif user_input == "h":
-        #     run_option_h()
         elif user_input != "q":
             print("This is not a valid choice.")
     print("You have chosen to finish - goodbye.")
