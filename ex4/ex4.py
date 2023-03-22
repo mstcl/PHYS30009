@@ -98,8 +98,7 @@ def run_option_a(global_vars: dict):
 def run_option_a_aux(global_vars: dict):
     """Execute part a auxiliary stuff
 
-    :global_vars: TODO
-    :returns: TODO
+    :param global_vars: global variables
 
     """
     step_sizes = np.linspace(10, 200, 400)
@@ -570,7 +569,6 @@ def check_crash(
     :param x_pos_moon: x positions of body 2
     :param y_pos_moon: y positions of body 2
     :param min_length: the minimum distance between two before collision
-    :returns: TODO
 
     """
     crash_idx = np.where(
