@@ -1,0 +1,14 @@
+*.png
+*.xcf
+*.pdf
+*.gif
+*.bbl
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.bib
+assets
+gifs
