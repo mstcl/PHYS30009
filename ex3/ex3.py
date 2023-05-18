@@ -1087,6 +1087,5 @@ def main():
             print("! This is not a valid choice.")
     print("-> You have chosen to finish - goodbye.")
 
-
 if __name__ == "__main__":
     main()
